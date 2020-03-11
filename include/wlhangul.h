@@ -21,6 +21,17 @@ struct wlhangul_seat {
 
 	HangulInputContext *input_context;
 	struct zwp_input_method_v2 *input_method;
+
+	struct xkb_context *xkb_context;
+	struct xkb_keymap *xkb_keymap;
+	struct xkb_state *xkb_state;
+
+	bool active;
+	uint32_t serial;
+	bool pending_activate, pending_deactivate;
+	struct zwp_input_method_keyboard_grab_v2 *keyboard_grab;
 };
+
+char *ucsstr_to_str(const ucschar *ucsstr);
 
 #endif

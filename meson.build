@@ -23,8 +23,9 @@ wlhangul_inc = include_directories('include')
 libhangul = dependency('libhangul')
 wayland_client = dependency('wayland-client')
 wayland_protocols = dependency('wayland-protocols')
+xkbcommon = dependency('xkbcommon')
 
-wlhangul_files = files('main.c')
+wlhangul_files = files('main.c', 'utf8.c')
 
 subdir('protocol')
 
@@ -32,6 +33,6 @@ executable(
 	meson.project_name(),
 	wlhangul_files,
 	include_directories: wlhangul_inc,
-	dependencies: [libhangul, wayland_client],
+	dependencies: [libhangul, wayland_client, xkbcommon],
 	install: true,
 )

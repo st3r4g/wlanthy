@@ -4,7 +4,7 @@ A Hangul input method for Wayland.
 
 ## Building
 
-Depends on Wayland and libhangul.
+Depends on libhangul, Wayland and libxkbcommon.
 
     meson build/
     ninja -C build/
