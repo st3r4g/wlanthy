@@ -4,24 +4,12 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #include <wayland-client.h>
-#include <xkbcommon/xkbcommon.h>
 #include "wlhangul.h"
 #include "input-method-unstable-v2-client-protocol.h"
+#include "virtual-keyboard-unstable-v1-client-protocol.h"
 
-static void handle_key(void *data,
-		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
-		uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
-	struct wlhangul_seat *seat = data;
-	xkb_keycode_t xkb_key = key + 8;
-
-	if (seat->xkb_state == NULL) {
-		return;
-	}
-
-	if (state != WL_KEYBOARD_KEY_STATE_PRESSED) {
-		return;
-	}
-
+static bool handle_key_pressed(struct wlhangul_seat *seat,
+		xkb_keycode_t xkb_key) {
 	bool handled;
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
 	switch (sym) {
@@ -56,9 +44,54 @@ static void handle_key(void *data,
 
 	zwp_input_method_v2_commit(seat->input_method, seat->serial);
 
+	if (handled) {
+		for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
+			if (seat->pressed[i] == 0) {
+				seat->pressed[i] = xkb_key;
+				break;
+			}
+		}
+	}
+
+	return handled;
+}
+
+static bool handle_key_released(struct wlhangul_seat *seat,
+		xkb_keycode_t xkb_key) {
+	bool handled = false;
+	for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
+		if (seat->pressed[i] == xkb_key) {
+			seat->pressed[i] = 0;
+			handled = true;
+			break;
+		}
+	}
+
+	return handled;
+}
+
+static void handle_key(void *data,
+		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
+		uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
+	struct wlhangul_seat *seat = data;
+	xkb_keycode_t xkb_key = key + 8;
+
+	if (seat->xkb_state == NULL) {
+		return;
+	}
+
+	bool handled = false;
+	switch (state) {
+	case WL_KEYBOARD_KEY_STATE_PRESSED:
+		handled = handle_key_pressed(seat, xkb_key);
+		break;
+	case WL_KEYBOARD_KEY_STATE_RELEASED:
+		handled = handle_key_released(seat, xkb_key);
+		break;
+	}
+
 	if (!handled) {
-		printf("key: %d\n", xkb_key);
-		// TODO: forward key
+		zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, time, key, state);
 	}
 }
 
@@ -74,12 +107,16 @@ static void handle_modifiers(void *data,
 
 	xkb_state_update_mask(seat->xkb_state, mods_depressed,
 		mods_latched, mods_locked, 0, 0, group);
+	zwp_virtual_keyboard_v1_modifiers(seat->virtual_keyboard,
+		mods_depressed, mods_latched, mods_locked, group);
 }
 
 static void handle_keymap(void *data,
 		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
 		uint32_t format, int32_t fd, uint32_t size) {
 	struct wlhangul_seat *seat = data;
+
+	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd, size);
 
 	if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
 		close(fd);
@@ -168,6 +205,7 @@ static void handle_done(void *data, struct zwp_input_method_v2 *input_method) {
 	} else if (seat->pending_deactivate && seat->active) {
 		zwp_input_method_keyboard_grab_v2_release(seat->keyboard_grab);
 		hangul_ic_reset(seat->input_context);
+		memset(seat->pressed, 0, sizeof(seat->pressed));
 		seat->keyboard_grab = NULL;
 		seat->active = false;
 	}
@@ -209,6 +247,9 @@ static void registry_handle_global(void *data, struct wl_registry *registry,
 	} else if (strcmp(interface, zwp_input_method_manager_v2_interface.name) == 0) {
 		state->input_method_manager = wl_registry_bind(registry, name,
 			&zwp_input_method_manager_v2_interface, 1);
+	} else if (strcmp(interface, zwp_virtual_keyboard_manager_v1_interface.name) == 0) {
+		state->virtual_keyboard_manager = wl_registry_bind(registry, name,
+			&zwp_virtual_keyboard_manager_v1_interface, 1);
 	}
 }
 
@@ -248,6 +289,9 @@ int main(int argc, char *argv[]) {
 			state.input_method_manager, seat->wl_seat);
 		zwp_input_method_v2_add_listener(seat->input_method,
 			&input_method_listener, seat);
+		seat->virtual_keyboard =
+			zwp_virtual_keyboard_manager_v1_create_virtual_keyboard(
+			state.virtual_keyboard_manager, seat->wl_seat);
 		seat->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 	}
 

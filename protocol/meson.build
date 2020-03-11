@@ -8,6 +8,7 @@ wayland_scanner_exe = find_program(
 
 protocols = {
   'input-method-unstable-v2': 'input-method-unstable-v2.xml',
+  'virtual-keyboard-unstable-v1': 'virtual-keyboard-unstable-v1.xml',
 }
 
 foreach name, path : protocols
