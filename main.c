@@ -10,20 +10,22 @@
 
 static bool handle_key_pressed(struct wlhangul_seat *seat,
 		xkb_keycode_t xkb_key) {
-	bool handled;
+	bool handled = false;
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
 	switch (sym) {
-	case XKB_KEY_Escape:
-		seat->state->running = false;
+	case XKB_KEY_Hangul:
+		seat->enabled = !seat->enabled;
+		if (!seat->enabled) {
+			hangul_ic_reset(seat->input_context);
+		}
 		handled = true;
 		break;
 	case XKB_KEY_BackSpace:
-		handled = hangul_ic_backspace(seat->input_context);
+		handled = seat->enabled && hangul_ic_backspace(seat->input_context);
 		break;
-	// TODO: XKB_KEY_Hangul
 	default:;
 		uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
-		handled = hangul_ic_process(seat->input_context, ch);
+		handled = seat->enabled && hangul_ic_process(seat->input_context, ch);
 		break;
 	}
 

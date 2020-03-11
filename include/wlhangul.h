@@ -30,6 +30,7 @@ struct wlhangul_seat {
 	struct xkb_state *xkb_state;
 
 	bool active;
+	bool enabled;
 	uint32_t serial;
 	bool pending_activate, pending_deactivate;
 	struct zwp_input_method_keyboard_grab_v2 *keyboard_grab;
