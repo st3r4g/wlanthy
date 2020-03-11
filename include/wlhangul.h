@@ -14,6 +14,9 @@ struct wlhangul_state {
 	bool running;
 
 	struct wl_list seats;
+
+	bool enabled_by_default;
+	xkb_keysym_t toggle_key;
 };
 
 struct wlhangul_seat {

@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 2
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,23 +11,24 @@
 
 static bool handle_key_pressed(struct wlhangul_seat *seat,
 		xkb_keycode_t xkb_key) {
-	bool handled = false;
+	bool handled;
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
-	switch (sym) {
-	case XKB_KEY_Hangul:
+	if (sym == seat->state->toggle_key) {
 		seat->enabled = !seat->enabled;
 		if (!seat->enabled) {
 			hangul_ic_reset(seat->input_context);
 		}
 		handled = true;
-		break;
-	case XKB_KEY_BackSpace:
-		handled = seat->enabled && hangul_ic_backspace(seat->input_context);
-		break;
-	default:;
-		uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
-		handled = seat->enabled && hangul_ic_process(seat->input_context, ch);
-		break;
+	} else {
+		switch (sym) {
+		case XKB_KEY_BackSpace:
+			handled = seat->enabled && hangul_ic_backspace(seat->input_context);
+			break;
+		default:;
+			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
+			handled = seat->enabled && hangul_ic_process(seat->input_context, ch);
+			break;
+		}
 	}
 
 	const ucschar *commit_ucsstr =
@@ -265,9 +267,42 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = registry_handle_global_remove,
 };
 
+static const char usage[] = "usage: wlhangul [options...]\n"
+	"\n"
+	"    -i hangul|english  Initial input mode (default: english)\n"
+	"    -k <key>           Key to toggle Hangul input (default: Hangul)\n";
+
 int main(int argc, char *argv[]) {
 	struct wlhangul_state state = {0};
+	state.toggle_key = XKB_KEY_Hangul;
 	wl_list_init(&state.seats);
+
+	int opt;
+	while ((opt = getopt(argc, argv, "hi:k:")) != -1) {
+		switch (opt) {
+		case 'i':
+			if (strcmp(optarg, "hangul") == 0) {
+				state.enabled_by_default = true;
+			} else if (strcmp(optarg, "english") == 0) {
+				state.enabled_by_default = false;
+			} else {
+				fprintf(stderr, "Invalid value for -i\n");
+				return 1;
+			}
+			break;
+		case 'k':;
+			state.toggle_key =
+				xkb_keysym_from_name(optarg, XKB_KEYSYM_NO_FLAGS);
+			if (state.toggle_key == XKB_KEY_NoSymbol) {
+				fprintf(stderr, "Invalid key for -k\n");
+				return 1;
+			}
+			break;
+		default:
+			fprintf(stderr, "%s", usage);
+			return 1;
+		}
+	}
 
 	state.display = wl_display_connect(NULL);
 	if (state.display == NULL) {
@@ -295,6 +330,7 @@ int main(int argc, char *argv[]) {
 			zwp_virtual_keyboard_manager_v1_create_virtual_keyboard(
 			state.virtual_keyboard_manager, seat->wl_seat);
 		seat->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+		seat->enabled = state.enabled_by_default;
 	}
 
 	state.running = true;
