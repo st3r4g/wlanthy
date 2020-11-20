@@ -14,7 +14,8 @@ support][sway-keyboard-grab].
     ninja -C build/
     ./build/wlanthy
 
-Test with gtk3 apps (e.g. Firefox).
+Test with gtk3 apps (e.g. Firefox). By default it starts in passthrough mode.
+Press F5 to toggle passthrough/japanese mode.
 
 ## License
 
