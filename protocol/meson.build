@@ -18,7 +18,7 @@ foreach name, path : protocols
 		output: '@BASENAME@-protocol.c',
 		command: [wayland_scanner_exe, 'private-code', '@INPUT@', '@OUTPUT@'],
 	)
-	wlhangul_files += code
+	wlanthy_files += code
 
 	client_header = custom_target(
 		name.underscorify() + '_client_h',
@@ -26,5 +26,5 @@ foreach name, path : protocols
 		output: '@BASENAME@-client-protocol.h',
 		command: [wayland_scanner_exe, 'client-header', '@INPUT@', '@OUTPUT@'],
 	)
-	wlhangul_files += client_header
+	wlanthy_files += client_header
 endforeach

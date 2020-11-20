@@ -1,52 +1,79 @@
 #define _POSIX_C_SOURCE 2
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <wayland-client.h>
-#include "wlhangul.h"
+#include "wlanthy.h"
 #include "input-method-unstable-v2-client-protocol.h"
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
 
-static bool handle_key_pressed(struct wlhangul_seat *seat,
+static bool handle_key_pressed(struct wlanthy_seat *seat,
 		xkb_keycode_t xkb_key) {
 	bool handled;
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
 	if (sym == seat->state->toggle_key) {
 		seat->enabled = !seat->enabled;
 		if (!seat->enabled) {
-			hangul_ic_reset(seat->input_context);
+//			hangul_ic_reset(seat->input_context);
 		}
 		handled = true;
-	} else {
+	} else if (!seat->enabled) {
+    		return false;
+    	} else {
 		switch (sym) {
+		case XKB_KEY_space:
+    			anthy_input_space(seat->input_context);
+			handled = seat->enabled; // TODO remove these
+			break;
 		case XKB_KEY_BackSpace:
-			handled = seat->enabled && hangul_ic_backspace(seat->input_context);
+    			anthy_input_erase_prev(seat->input_context);
+			handled = seat->enabled;
+			break;
+		case XKB_KEY_Tab:
+    			anthy_input_move(seat->input_context, 1);
+			handled = seat->enabled;
 			break;
 		default:;
 			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
-			handled = seat->enabled && hangul_ic_process(seat->input_context, ch);
+			anthy_input_key(seat->input_context, ch);
+			handled = seat->enabled;
 			break;
 		}
 	}
 
-	const ucschar *commit_ucsstr =
-		hangul_ic_get_commit_string(seat->input_context);
-	if (commit_ucsstr[0] != 0) {
-		char *commit_str = ucsstr_to_str(commit_ucsstr);
+	struct anthy_input_preedit *pe = anthy_input_get_preedit(seat->input_context);
+	assert(pe);
+	
+	if (pe->commit) {
+		char *commit_str = iconv_code_conv(seat->conv_desc, pe->commit);
 		zwp_input_method_v2_commit_string(seat->input_method, commit_str);
 		free(commit_str);
+	zwp_input_method_v2_commit(seat->input_method, seat->serial);
+	return handled;
 	}
 
-	const ucschar *preedit_ucsstr =
-		hangul_ic_get_preedit_string(seat->input_context);
-	char *preedit_str = ucsstr_to_str(preedit_ucsstr);
-	zwp_input_method_v2_set_preedit_string(seat->input_method,
-		preedit_str, 0, strlen(preedit_str));
-	free(preedit_str);
+/*	printf("state: %d\n", anthy_input_get_state(seat->input_context));
+	anthy_context_t ac;
+	if ((ac = anthy_input_get_anthy_context(seat->input_context)))
+    		anthy_print_context(ac);*/
 
-	zwp_input_method_v2_commit(seat->input_method, seat->serial);
+	char buf[256] = {0};
+	for (struct anthy_input_segment* cur = pe->segment; cur != NULL && cur->str
+!= NULL; cur = cur->next) {
+    		assert(cur->str);
+    		strcat(buf, cur->str);
+	}
+	if (pe->state == 2 || pe->state == 3) {
+    		char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
+//		printf("%s\n", preedit_str);
+        	zwp_input_method_v2_set_preedit_string(seat->input_method,
+		preedit_str, 0, strlen(preedit_str));
+        	zwp_input_method_v2_commit(seat->input_method, seat->serial);
+    		free(preedit_str);
+	}
 
 	if (handled) {
 		for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
@@ -57,10 +84,11 @@ static bool handle_key_pressed(struct wlhangul_seat *seat,
 		}
 	}
 
+	anthy_input_free_preedit(pe);
 	return handled;
 }
 
-static bool handle_key_released(struct wlhangul_seat *seat,
+static bool handle_key_released(struct wlanthy_seat *seat,
 		xkb_keycode_t xkb_key) {
 	bool handled = false;
 	for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
@@ -77,7 +105,7 @@ static bool handle_key_released(struct wlhangul_seat *seat,
 static void handle_key(void *data,
 		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
 		uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
-	struct wlhangul_seat *seat = data;
+	struct wlanthy_seat *seat = data;
 	xkb_keycode_t xkb_key = key + 8;
 
 	if (seat->xkb_state == NULL) {
@@ -103,7 +131,7 @@ static void handle_modifiers(void *data,
 		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
 		uint32_t serial, uint32_t mods_depressed, uint32_t mods_latched,
 		uint32_t mods_locked, uint32_t group) {
-	struct wlhangul_seat *seat = data;
+	struct wlanthy_seat *seat = data;
 
 	if (seat->xkb_state == NULL) {
 		return;
@@ -118,7 +146,7 @@ static void handle_modifiers(void *data,
 static void handle_keymap(void *data,
 		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
 		uint32_t format, int32_t fd, uint32_t size) {
-	struct wlhangul_seat *seat = data;
+	struct wlanthy_seat *seat = data;
 
 	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd, size);
 
@@ -173,13 +201,13 @@ static const struct zwp_input_method_keyboard_grab_v2_listener
 
 static void handle_activate(void *data,
 		struct zwp_input_method_v2 *input_method) {
-	struct wlhangul_seat *seat = data;
+	struct wlanthy_seat *seat = data;
 	seat->pending_activate = true;
 }
 
 static void handle_deactivate(void *data,
 		struct zwp_input_method_v2 *input_method) {
-	struct wlhangul_seat *seat = data;
+	struct wlanthy_seat *seat = data;
 	seat->pending_deactivate = true;
 }
 
@@ -198,7 +226,7 @@ static void handle_content_type(void *data,
 }
 
 static void handle_done(void *data, struct zwp_input_method_v2 *input_method) {
-	struct wlhangul_seat *seat = data;
+	struct wlanthy_seat *seat = data;
 	seat->serial++;
 
 	if (seat->pending_activate && !seat->active) {
@@ -208,7 +236,7 @@ static void handle_done(void *data, struct zwp_input_method_v2 *input_method) {
 		seat->active = true;
 	} else if (seat->pending_deactivate && seat->active) {
 		zwp_input_method_keyboard_grab_v2_release(seat->keyboard_grab);
-		hangul_ic_reset(seat->input_context);
+//		hangul_ic_reset(seat->input_context);
 		memset(seat->pressed, 0, sizeof(seat->pressed));
 		seat->keyboard_grab = NULL;
 		seat->active = false;
@@ -232,9 +260,9 @@ static const struct zwp_input_method_v2_listener input_method_listener = {
 	.unavailable = handle_unavailable,
 };
 
-static struct wlhangul_seat *create_seat(struct wlhangul_state *state,
+static struct wlanthy_seat *create_seat(struct wlanthy_state *state,
 		struct wl_seat *wl_seat) {
-	struct wlhangul_seat *seat = calloc(1, sizeof(*seat));
+	struct wlanthy_seat *seat = calloc(1, sizeof(*seat));
 	seat->wl_seat = wl_seat;
 	seat->state = state;
 	wl_list_insert(&state->seats, &seat->link);
@@ -243,7 +271,7 @@ static struct wlhangul_seat *create_seat(struct wlhangul_state *state,
 
 static void registry_handle_global(void *data, struct wl_registry *registry,
 		uint32_t name, const char *interface, uint32_t version) {
-	struct wlhangul_state *state = data;
+	struct wlanthy_state *state = data;
 	if (strcmp(interface, wl_seat_interface.name) == 0) {
 		struct wl_seat *seat =
 			wl_registry_bind(registry, name, &wl_seat_interface, 1);
@@ -267,21 +295,21 @@ static const struct wl_registry_listener registry_listener = {
 	.global_remove = registry_handle_global_remove,
 };
 
-static const char usage[] = "usage: wlhangul [options...]\n"
+static const char usage[] = "usage: wlanthy [options...]\n"
 	"\n"
-	"    -i hangul|english  Initial input mode (default: english)\n"
-	"    -k <key>           Key to toggle Hangul input (default: Hangul)\n";
+	"    -i japanese|english  Initial input mode (default: english)\n"
+	"    -k <key>           Key to toggle japanese input (default: F5)\n";
 
 int main(int argc, char *argv[]) {
-	struct wlhangul_state state = {0};
-	state.toggle_key = XKB_KEY_Hangul;
+	struct wlanthy_state state = {0};
+	state.toggle_key = XKB_KEY_F5;
 	wl_list_init(&state.seats);
 
 	int opt;
 	while ((opt = getopt(argc, argv, "hi:k:")) != -1) {
 		switch (opt) {
 		case 'i':
-			if (strcmp(optarg, "hangul") == 0) {
+			if (strcmp(optarg, "japanese") == 0) {
 				state.enabled_by_default = true;
 			} else if (strcmp(optarg, "english") == 0) {
 				state.enabled_by_default = false;
@@ -319,9 +347,13 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 
-	struct wlhangul_seat *seat;
+	anthy_input_init();
+
+	struct wlanthy_seat *seat;
 	wl_list_for_each(seat, &state.seats, link) {
-		seat->input_context = hangul_ic_new("2");
+        	seat->conv_desc = iconv_open("UTF-8", "EUC-JP"); // should be unique...
+    		seat->input_config = anthy_input_create_config();
+		seat->input_context = anthy_input_create_context(seat->input_config);
 		seat->input_method = zwp_input_method_manager_v2_get_input_method(
 			state.input_method_manager, seat->wl_seat);
 		zwp_input_method_v2_add_listener(seat->input_method,
@@ -338,5 +370,6 @@ int main(int argc, char *argv[]) {
 		// This space is intentionally left blank
 	}
 
+//	finalize (seat->conv_desc);
 	return 0;
 }

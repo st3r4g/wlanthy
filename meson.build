@@ -1,5 +1,5 @@
 project(
-	'wlhangul',
+	'wlanthy',
 	'c',
 	version: '0.0.0',
 	license: 'MIT',
@@ -7,7 +7,7 @@ project(
 	default_options: [
 		'c_std=c99',
 		'warning_level=2',
-		'werror=true',
+		'werror=false',
 	],
 )
 
@@ -18,21 +18,22 @@ add_project_arguments(cc.get_supported_arguments([
 	'-Wno-unused-parameter',
 ]), language: 'c')
 
-wlhangul_inc = include_directories('include')
+wlanthy_inc = include_directories('include')
 
-libhangul = dependency('libhangul')
+anthy = dependency('anthy')
+anthyinput = cc.find_library('anthyinput')
 wayland_client = dependency('wayland-client')
 wayland_protocols = dependency('wayland-protocols')
 xkbcommon = dependency('xkbcommon')
 
-wlhangul_files = files('main.c', 'utf8.c')
+wlanthy_files = files('main.c', 'utf8.c')
 
 subdir('protocol')
 
 executable(
 	meson.project_name(),
-	wlhangul_files,
-	include_directories: wlhangul_inc,
-	dependencies: [libhangul, wayland_client, xkbcommon],
+	wlanthy_files,
+	include_directories: wlanthy_inc,
+	dependencies: [anthy, anthyinput, wayland_client, xkbcommon],
 	install: true,
 )

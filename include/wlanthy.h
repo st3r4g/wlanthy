@@ -1,12 +1,14 @@
 #ifndef WLHANGUL_H
 #define WLHANGUL_H
 
-#include <hangul.h>
+#include <anthy/anthy.h>
+#include <anthy/input.h>
+#include <iconv.h>
 #include <stdbool.h>
 #include <wayland-client-core.h>
 #include <xkbcommon/xkbcommon.h>
 
-struct wlhangul_state {
+struct wlanthy_state {
 	struct wl_display *display;
 	struct zwp_input_method_manager_v2 *input_method_manager;
 	struct zwp_virtual_keyboard_manager_v1 *virtual_keyboard_manager;
@@ -19,12 +21,14 @@ struct wlhangul_state {
 	xkb_keysym_t toggle_key;
 };
 
-struct wlhangul_seat {
+struct wlanthy_seat {
 	struct wl_list link;
 	struct wl_seat *wl_seat;
-	struct wlhangul_state *state;
+	struct wlanthy_state *state;
 
-	HangulInputContext *input_context;
+	iconv_t conv_desc;
+	struct anthy_input_config *input_config;
+	struct anthy_input_context *input_context;
 	struct zwp_input_method_v2 *input_method;
 	struct zwp_virtual_keyboard_v1 *virtual_keyboard;
 
@@ -40,6 +44,6 @@ struct wlhangul_seat {
 	xkb_keycode_t pressed[64];
 };
 
-char *ucsstr_to_str(const ucschar *ucsstr);
-
+char *
+iconv_code_conv(iconv_t cd, const char *instr);
 #endif
