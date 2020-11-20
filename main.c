@@ -39,8 +39,10 @@ static bool handle_key_pressed(struct wlanthy_seat *seat,
 			handled = seat->enabled;
 			break;
 		case XKB_KEY_Return:
-			anthy_input_commit(seat->input_context);
-			handled = seat->enabled;
+			if (anthy_input_get_state(seat->input_context) != 1) {
+				anthy_input_commit(seat->input_context);
+				handled = seat->enabled;
+			}
 			break;
 		default:;
 			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
@@ -72,14 +74,12 @@ static bool handle_key_pressed(struct wlanthy_seat *seat,
     		assert(cur->str);
     		strcat(buf, cur->str);
 	}
-	if (pe->state == 2 || pe->state == 3) {
-    		char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
-//		printf("%s\n", preedit_str);
-        	zwp_input_method_v2_set_preedit_string(seat->input_method,
-		preedit_str, 0, strlen(preedit_str));
-        	zwp_input_method_v2_commit(seat->input_method, seat->serial);
-    		free(preedit_str);
-	}
+	char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
+//	printf("%s\n", preedit_str);
+	zwp_input_method_v2_set_preedit_string(seat->input_method,
+	preedit_str, 0, strlen(preedit_str));
+	zwp_input_method_v2_commit(seat->input_method, seat->serial);
+	free(preedit_str);
 
 	if (handled) {
 		for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
