@@ -103,12 +103,14 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 	return true;
 }
 
+uint32_t last = 0; // HACK?
 
 static void handle_key(void *data,
 		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
 		uint32_t serial, uint32_t time, uint32_t key, uint32_t state) {
 	struct wlanthy_seat *seat = data;
 	xkb_keycode_t xkb_key = key + 8;
+	last = key; // HACK?
 
 	if (seat->xkb_state == NULL) {
 		return;
@@ -234,6 +236,9 @@ static void handle_done(void *data, struct zwp_input_method_v2 *input_method) {
 		zwp_input_method_keyboard_grab_v2_release(seat->keyboard_grab);
 //		hangul_ic_reset(seat->input_context);
 		memset(seat->pressed, 0, sizeof(seat->pressed));
+		if (seat->xkb_keymap != NULL)
+			zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, 0, last,
+										WL_KEYBOARD_KEY_STATE_RELEASED);
 		seat->keyboard_grab = NULL;
 		seat->active = false;
 	}
