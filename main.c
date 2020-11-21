@@ -10,6 +10,8 @@
 #include "input-method-unstable-v2-client-protocol.h"
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
 
+#define WLANTHY_BUFSIZE 4000
+
 /*
  * Returns false if the key needs to be passed through
  */
@@ -69,11 +71,14 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 	return true;
 	}
 
-	char buf[256] = {0};
-	for (struct anthy_input_segment* cur = pe->segment; cur != NULL && cur->str
-!= NULL; cur = cur->next) {
+	char buf[WLANTHY_BUFSIZE]; buf[0] = '\0';
+	int totlen = 0;
+	for (struct anthy_input_segment* cur = pe->segment; cur != NULL &&
+		 cur->str != NULL; cur = cur->next) {
 		assert(cur->str);
-		strcat(buf, cur->str);
+		totlen += strlen(cur->str);
+		if (WLANTHY_BUFSIZE-totlen-1 > 0)
+			strcat(buf, cur->str);
 	}
 	char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
 //	printf("%s\n", preedit_str);
