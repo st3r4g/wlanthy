@@ -10,63 +10,64 @@
 #include "input-method-unstable-v2-client-protocol.h"
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
 
-static bool handle_key_pressed(struct wlanthy_seat *seat,
+/*
+ * Returns false if the key needs to be passed through
+ */
+static bool handle_key_anthy(struct wlanthy_seat *seat,
 		xkb_keycode_t xkb_key) {
-	bool handled = false;
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
 	if (sym == seat->state->toggle_key) {
 		seat->enabled = !seat->enabled;
 		if (!seat->enabled) {
 //			hangul_ic_reset(seat->input_context);
 		}
-		handled = true;
+		return true;
 	} else if (!seat->enabled) {
 		return false;
 	} else {
 		switch (sym) {
 		case XKB_KEY_space:
 			anthy_input_space(seat->input_context);
-			handled = seat->enabled; // TODO remove these
 			break;
 		case XKB_KEY_BackSpace:
 			if (anthy_input_get_state(seat->input_context) != 1) {
 				anthy_input_erase_prev(seat->input_context);
-				handled = seat->enabled;
-			}
+			} else
+				return false;
 			break;
 		case XKB_KEY_Tab:
 			anthy_input_move(seat->input_context, 1);
-			handled = seat->enabled;
 			break;
 		case XKB_KEY_Return:
 			if (anthy_input_get_state(seat->input_context) != 1) {
 				anthy_input_commit(seat->input_context);
-				handled = seat->enabled;
-			}
+			} else
+				return false;
 			break;
 		default:;
 			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
 			anthy_input_key(seat->input_context, ch);
-			handled = seat->enabled;
 			break;
 		}
 	}
+	/*
+	 * At this point the key has been handled by anthy
+	 */
+//	printf("state: %d\n", anthy_input_get_state(seat->input_context));
+/*	anthy_context_t ac;
+	if ((ac = anthy_input_get_anthy_context(seat->input_context)))
+		anthy_print_context(ac);*/
 
 	struct anthy_input_preedit *pe = anthy_input_get_preedit(seat->input_context);
 	assert(pe);
 
-//	printf("state: %d\n", anthy_input_get_state(seat->input_context));
 	if (pe->commit) {
 		char *commit_str = iconv_code_conv(seat->conv_desc, pe->commit);
 		zwp_input_method_v2_commit_string(seat->input_method, commit_str);
 		free(commit_str);
 	zwp_input_method_v2_commit(seat->input_method, seat->serial);
-	return handled;
+	return true;
 	}
-
-/*	anthy_context_t ac;
-	if ((ac = anthy_input_get_anthy_context(seat->input_context)))
-		anthy_print_context(ac);*/
 
 	char buf[256] = {0};
 	for (struct anthy_input_segment* cur = pe->segment; cur != NULL && cur->str
@@ -81,6 +82,13 @@ static bool handle_key_pressed(struct wlanthy_seat *seat,
 	zwp_input_method_v2_commit(seat->input_method, seat->serial);
 	free(preedit_str);
 
+	anthy_input_free_preedit(pe);
+	return true;
+}
+
+static bool handle_key_pressed(struct wlanthy_seat *seat,
+		xkb_keycode_t xkb_key) {
+	bool handled = handle_key_anthy(seat, xkb_key);
 	if (handled) {
 		for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
 			if (seat->pressed[i] == 0) {
@@ -90,7 +98,6 @@ static bool handle_key_pressed(struct wlanthy_seat *seat,
 		}
 	}
 
-	anthy_input_free_preedit(pe);
 	return handled;
 }
 
