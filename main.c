@@ -146,7 +146,12 @@ static void handle_keymap(void *data,
 		uint32_t format, int32_t fd, uint32_t size) {
 	struct wlanthy_seat *seat = data;
 
-	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd, size);
+	static bool flag = true; // HACK: avoid keymap loop in sway
+	if (flag) {
+		zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
+									   size);
+		flag = false;
+	} // END HACK
 
 	if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
 		close(fd);
