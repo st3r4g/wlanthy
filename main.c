@@ -91,34 +91,6 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 	return true;
 }
 
-static bool handle_key_pressed(struct wlanthy_seat *seat,
-		xkb_keycode_t xkb_key) {
-	bool handled = handle_key_anthy(seat, xkb_key);
-	if (handled) {
-		for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
-			if (seat->pressed[i] == 0) {
-				seat->pressed[i] = xkb_key;
-				break;
-			}
-		}
-	}
-
-	return handled;
-}
-
-static bool handle_key_released(struct wlanthy_seat *seat,
-		xkb_keycode_t xkb_key) {
-	bool handled = false;
-	for (size_t i = 0; i < sizeof(seat->pressed) / sizeof(seat->pressed[0]); i++) {
-		if (seat->pressed[i] == xkb_key) {
-			seat->pressed[i] = 0;
-			handled = true;
-			break;
-		}
-	}
-
-	return handled;
-}
 
 static void handle_key(void *data,
 		struct zwp_input_method_keyboard_grab_v2 *keyboard_grab,
@@ -131,14 +103,8 @@ static void handle_key(void *data,
 	}
 
 	bool handled = false;
-	switch (state) {
-	case WL_KEYBOARD_KEY_STATE_PRESSED:
-		handled = handle_key_pressed(seat, xkb_key);
-		break;
-	case WL_KEYBOARD_KEY_STATE_RELEASED:
-		handled = handle_key_released(seat, xkb_key);
-		break;
-	}
+	if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
+		handled = handle_key_anthy(seat, xkb_key);
 
 	if (!handled) {
 		zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, time, key, state);
