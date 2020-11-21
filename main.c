@@ -21,11 +21,11 @@ static bool handle_key_pressed(struct wlanthy_seat *seat,
 		}
 		handled = true;
 	} else if (!seat->enabled) {
-    		return false;
-    	} else {
+		return false;
+	} else {
 		switch (sym) {
 		case XKB_KEY_space:
-    			anthy_input_space(seat->input_context);
+			anthy_input_space(seat->input_context);
 			handled = seat->enabled; // TODO remove these
 			break;
 		case XKB_KEY_BackSpace:
@@ -54,7 +54,7 @@ static bool handle_key_pressed(struct wlanthy_seat *seat,
 
 	struct anthy_input_preedit *pe = anthy_input_get_preedit(seat->input_context);
 	assert(pe);
-	
+
 //	printf("state: %d\n", anthy_input_get_state(seat->input_context));
 	if (pe->commit) {
 		char *commit_str = iconv_code_conv(seat->conv_desc, pe->commit);
@@ -66,13 +66,13 @@ static bool handle_key_pressed(struct wlanthy_seat *seat,
 
 /*	anthy_context_t ac;
 	if ((ac = anthy_input_get_anthy_context(seat->input_context)))
-    		anthy_print_context(ac);*/
+		anthy_print_context(ac);*/
 
 	char buf[256] = {0};
 	for (struct anthy_input_segment* cur = pe->segment; cur != NULL && cur->str
 != NULL; cur = cur->next) {
-    		assert(cur->str);
-    		strcat(buf, cur->str);
+		assert(cur->str);
+		strcat(buf, cur->str);
 	}
 	char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
 //	printf("%s\n", preedit_str);
@@ -357,8 +357,8 @@ int main(int argc, char *argv[]) {
 
 	struct wlanthy_seat *seat;
 	wl_list_for_each(seat, &state.seats, link) {
-        	seat->conv_desc = iconv_open("UTF-8", "EUC-JP"); // should be unique...
-    		seat->input_config = anthy_input_create_config();
+		seat->conv_desc = iconv_open("UTF-8", "EUC-JP"); // should be unique...
+		seat->input_config = anthy_input_create_config();
 		seat->input_context = anthy_input_create_context(seat->input_config);
 		seat->input_method = zwp_input_method_manager_v2_get_input_method(
 			state.input_method_manager, seat->wl_seat);
