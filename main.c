@@ -315,11 +315,12 @@ static const struct wl_registry_listener registry_listener = {
 
 static const char usage[] = "usage: wlanthy [options...]\n"
 	"\n"
-	"    -i japanese|english  Initial input mode (default: english)\n"
-	"    -k <key>           Key to toggle japanese input (default: F5)\n";
+	"    -i anthy|pass      Initial input mode (default: anthy)\n"
+	"    -k <key>           Key to toggle mode (default: F5)\n";
 
 int main(int argc, char *argv[]) {
 	struct wlanthy_state state = {0};
+	state.enabled_by_default = true;
 	state.toggle_key = XKB_KEY_F5;
 	wl_list_init(&state.seats);
 
@@ -327,9 +328,9 @@ int main(int argc, char *argv[]) {
 	while ((opt = getopt(argc, argv, "hi:k:")) != -1) {
 		switch (opt) {
 		case 'i':
-			if (strcmp(optarg, "japanese") == 0) {
+			if (strcmp(optarg, "anthy") == 0) {
 				state.enabled_by_default = true;
-			} else if (strcmp(optarg, "english") == 0) {
+			} else if (strcmp(optarg, "pass") == 0) {
 				state.enabled_by_default = false;
 			} else {
 				fprintf(stderr, "Invalid value for -i\n");
