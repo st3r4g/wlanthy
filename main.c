@@ -26,6 +26,15 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 		return true;
 	} else if (!seat->enabled) {
 		return false;
+	} else if (sym != XKB_KEY_BackSpace && sym != XKB_KEY_Tab && sym != XKB_KEY_Return
+			   && (sym < XKB_KEY_space || sym > XKB_KEY_asciitilde)) {
+//		char name[64];
+//		xkb_keysym_get_name(sym, name, 64);
+//		printf("%s detected\n", name);
+		return false;
+	} else if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_CTRL,
+											XKB_STATE_MODS_EFFECTIVE) > 0) {
+		return false;
 	} else {
 		switch (sym) {
 		case XKB_KEY_space:
@@ -38,7 +47,10 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 				return false;
 			break;
 		case XKB_KEY_Tab:
-			anthy_input_move(seat->input_context, 1);
+			if (anthy_input_get_state(seat->input_context) != 1) {
+				anthy_input_move(seat->input_context, 1);
+			} else
+				return false;
 			break;
 		case XKB_KEY_Return:
 			if (anthy_input_get_state(seat->input_context) != 1) {
