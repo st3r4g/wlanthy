@@ -27,7 +27,7 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 	} else if (!seat->enabled) {
 		return false;
 	} else if (sym != XKB_KEY_BackSpace && sym != XKB_KEY_Tab && sym != XKB_KEY_Return
-			   && (sym < XKB_KEY_space || sym > XKB_KEY_asciitilde)) {
+			   && sym != XKB_KEY_ISO_Left_Tab && (sym < XKB_KEY_space || sym > XKB_KEY_asciitilde)) {
 //		char name[64];
 //		xkb_keysym_get_name(sym, name, 64);
 //		printf("%s detected\n", name);
@@ -49,6 +49,12 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 		case XKB_KEY_Tab:
 			if (anthy_input_get_state(seat->input_context) != 1) {
 				anthy_input_move(seat->input_context, 1);
+			} else
+				return false;
+			break;
+		case XKB_KEY_ISO_Left_Tab:
+			if (anthy_input_get_state(seat->input_context) != 1) {
+				anthy_input_move(seat->input_context, -1);
 			} else
 				return false;
 			break;
