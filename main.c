@@ -32,8 +32,15 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 //		xkb_keysym_get_name(sym, name, 64);
 //		printf("%s detected\n", name);
 		return false;
-	} else if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_CTRL,
-											XKB_STATE_MODS_EFFECTIVE) > 0) {
+	} else if (xkb_state_mod_names_are_active(seat->xkb_state,
+XKB_STATE_MODS_EFFECTIVE, XKB_STATE_MATCH_ANY, XKB_MOD_NAME_CTRL,
+XKB_MOD_NAME_ALT, XKB_MOD_NAME_LOGO, XKB_MOD_NAME_CAPS,
+// TODO: investigate EFFECTIVE vs others
+// TODO: investigate XKB_LED_NAME_CAPS, XKB_LED_NAME_NUM, XKB_LED_NAME_SCROLL
+NULL) > 0) {
+	/*
+	 * Passthrough key if any modifier is active
+	 */
 		return false;
 	} else {
 		switch (sym) {
@@ -42,6 +49,7 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 			break;
 		case XKB_KEY_BackSpace:
 			if (anthy_input_get_state(seat->input_context) != 1) {
+				// TODO: send this repeatedly until key release
 				anthy_input_erase_prev(seat->input_context);
 			} else
 				return false;
