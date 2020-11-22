@@ -337,12 +337,12 @@ static const struct wl_registry_listener registry_listener = {
 static const char usage[] = "usage: wlanthy [options...]\n"
 	"\n"
 	"    -i anthy|pass      Initial input mode (default: anthy)\n"
-	"    -k <key>           Key to toggle mode (default: F5)\n";
+	"    -k <key>           Key to toggle mode (default: F12)\n";
 
 int main(int argc, char *argv[]) {
 	struct wlanthy_state state = {0};
 	state.enabled_by_default = true;
-	state.toggle_key = XKB_KEY_F5;
+	state.toggle_key = XKB_KEY_F12;
 	wl_list_init(&state.seats);
 
 	int opt;
