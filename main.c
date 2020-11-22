@@ -21,7 +21,9 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 	if (sym == seat->state->toggle_key) {
 		seat->enabled = !seat->enabled;
 		if (!seat->enabled) {
-//			hangul_ic_reset(seat->input_context);
+			// reset state
+			anthy_input_free_context(seat->input_context);
+			seat->input_context = anthy_input_create_context(seat->input_config);
 		}
 		return true;
 	} else if (!seat->enabled) {
@@ -266,7 +268,11 @@ static void handle_done(void *data, struct zwp_input_method_v2 *input_method) {
 		seat->active = true;
 	} else if (seat->pending_deactivate && seat->active) {
 		zwp_input_method_keyboard_grab_v2_release(seat->keyboard_grab);
-//		hangul_ic_reset(seat->input_context);
+
+		// reset state
+		anthy_input_free_context(seat->input_context);
+		seat->input_context = anthy_input_create_context(seat->input_config);
+
 		memset(seat->pressed, 0, sizeof(seat->pressed));
 		if (seat->xkb_keymap != NULL)
 			zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, 0, last,
