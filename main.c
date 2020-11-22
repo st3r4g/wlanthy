@@ -99,17 +99,30 @@ NULL) > 0) {
 
 	char buf[WLANTHY_BUFSIZE]; buf[0] = '\0';
 	int totlen = 0;
+	int totlen2 = 0;
+	int begin = 0;
+	int end = 0;
 	for (struct anthy_input_segment* cur = pe->segment; cur != NULL &&
 		 cur->str != NULL; cur = cur->next) {
+		// TODO: clean up, convert only once
 		assert(cur->str);
 		totlen += strlen(cur->str);
+		char *debug_str = iconv_code_conv(seat->conv_desc, cur->str);
+		if (cur == pe->cur_segment) {
+			begin = totlen2;
+			end = totlen2+strlen(debug_str);
+//			printf("%s | ", debug_str);
+		}
+		totlen2 += strlen(debug_str);
+//		printf ("%s ", debug_str);
+		free(debug_str);
 		if (WLANTHY_BUFSIZE-totlen-1 > 0)
 			strcat(buf, cur->str);
 	}
+//	printf("\n");
 	char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
-//	printf("%s\n", preedit_str);
 	zwp_input_method_v2_set_preedit_string(seat->input_method,
-	preedit_str, 0, strlen(preedit_str));
+	preedit_str, begin, end);
 	zwp_input_method_v2_commit(seat->input_method, seat->serial);
 	free(preedit_str);
 
