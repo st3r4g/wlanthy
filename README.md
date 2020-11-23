@@ -24,10 +24,11 @@ by Sway (wlroots).
 
 ## Usage
 
-Romaji input is immediately turned into kana. Press `Space` to subdivide the
-sentence into segments (phrases). Press `Space` again to change candidates
-for a given phrase, and use `Tab` to navigate between phrases. Undo with
-`Backspace`. Commit with `Enter` (or by starting to type the next sentence).
+Romaji input is immediately turned into kana. Press `Space` to subdivide
+the sentence into segments called phrases (文節). Use `Tab` to navigate
+between phrases: for a given phrase you can press `Space` to change candidates
+and use `Alt+Tab` to resize it. Undo with `Backspace`. Commit with `Enter`
+(or by starting to type the next sentence).
 
 Press F12 to toggle anthy/passthrough mode. Passthrough mode is not meant
 for regular usage (it's slow), I think it would be better to enable/disable

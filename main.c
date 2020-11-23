@@ -29,20 +29,24 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 	} else if (!seat->enabled) {
 		return false;
 	} else if (sym != XKB_KEY_BackSpace && sym != XKB_KEY_Tab && sym != XKB_KEY_Return
-			   && sym != XKB_KEY_ISO_Left_Tab && (sym < XKB_KEY_space || sym > XKB_KEY_asciitilde)) {
+			   && sym != XKB_KEY_ISO_Left_Tab && sym != XKB_KEY_Alt_L
+			   && (sym < XKB_KEY_space || sym > XKB_KEY_asciitilde)) {
 //		char name[64];
 //		xkb_keysym_get_name(sym, name, 64);
 //		printf("%s detected\n", name);
 		return false;
 	} else if (xkb_state_mod_names_are_active(seat->xkb_state,
 XKB_STATE_MODS_EFFECTIVE, XKB_STATE_MATCH_ANY, XKB_MOD_NAME_CTRL,
-XKB_MOD_NAME_ALT, XKB_MOD_NAME_LOGO, XKB_MOD_NAME_CAPS,
+XKB_MOD_NAME_LOGO, XKB_MOD_NAME_CAPS,
 // TODO: investigate EFFECTIVE vs others
 // TODO: investigate XKB_LED_NAME_CAPS, XKB_LED_NAME_NUM, XKB_LED_NAME_SCROLL
 NULL) > 0) {
 	/*
 	 * Passthrough key if any modifier is active
 	 */
+		return false;
+	} else if (anthy_input_get_state(seat->input_context) == 1 && (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
+XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 		return false;
 	} else {
 		switch (sym) {
@@ -58,12 +62,20 @@ NULL) > 0) {
 			break;
 		case XKB_KEY_Tab:
 			if (anthy_input_get_state(seat->input_context) != 1) {
+				if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
+												 XKB_STATE_MODS_EFFECTIVE) > 0)
+					anthy_input_resize(seat->input_context, 1);
+				else
 				anthy_input_move(seat->input_context, 1);
 			} else
 				return false;
 			break;
 		case XKB_KEY_ISO_Left_Tab:
 			if (anthy_input_get_state(seat->input_context) != 1) {
+				if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
+												 XKB_STATE_MODS_EFFECTIVE) > 0)
+					anthy_input_resize(seat->input_context, -1);
+				else
 				anthy_input_move(seat->input_context, -1);
 			} else
 				return false;
@@ -73,6 +85,8 @@ NULL) > 0) {
 				anthy_input_commit(seat->input_context);
 			} else
 				return false;
+			break;
+		case XKB_KEY_Alt_L:
 			break;
 		default:;
 			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
