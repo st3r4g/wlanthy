@@ -7,7 +7,7 @@ modification of [wlhangul].
 
 Depends on `anthy`, `wayland` and `libxkbcommon`.
 
-On Sway, this requires a [patch to add virtual-keyboard grabs
+On Sway, this requires a [patch to add keyboard grab
 support][sway-keyboard-grab].
 
     meson build/
@@ -17,8 +17,10 @@ support][sway-keyboard-grab].
 By default it starts in anthy mode, so you should be able to start typing
 in japanese right away after giving focus to a supported application.
 
-Supported applications are those that implement the `text-input` protocol,
-like gtk+3 applications (e.g. Firefox).
+Supported applications are those that implement the `text-input-v3` protocol,
+like gtk+3 applications (e.g. Firefox). Unfortunately, at the moment qt5
+implements `text-input-v2` which is probably very similar but not implemented
+by Sway (wlroots).
 
 ## Usage
 
