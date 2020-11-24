@@ -18,6 +18,7 @@
 static bool handle_key_anthy(struct wlanthy_seat *seat,
 		xkb_keycode_t xkb_key) {
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
+	int state = anthy_input_get_state(seat->input_context);
 	if (sym == seat->state->toggle_key) {
 		seat->enabled = !seat->enabled;
 		if (!seat->enabled) {
@@ -46,7 +47,7 @@ NULL) > 0) {
 	 * Passthrough key if any modifier is active
 	 */
 		return false;
-	} else if (anthy_input_get_state(seat->input_context) == 1 && (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
+	} else if (state == ANTHY_INPUT_ST_NONE && (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
 XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 		return false;
 	} else {
@@ -55,14 +56,14 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 			anthy_input_space(seat->input_context);
 			break;
 		case XKB_KEY_BackSpace:
-			if (anthy_input_get_state(seat->input_context) != 1) {
+			if (state != ANTHY_INPUT_ST_NONE) {
 				// TODO: send this repeatedly until key release
 				anthy_input_erase_prev(seat->input_context);
 			} else
 				return false;
 			break;
 		case XKB_KEY_Tab:
-			if (anthy_input_get_state(seat->input_context) != 1) {
+			if (state != ANTHY_INPUT_ST_NONE) {
 				if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
 												 XKB_STATE_MODS_EFFECTIVE) > 0)
 					anthy_input_resize(seat->input_context, 1);
@@ -72,7 +73,7 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 				return false;
 			break;
 		case XKB_KEY_ISO_Left_Tab:
-			if (anthy_input_get_state(seat->input_context) != 1) {
+			if (state != ANTHY_INPUT_ST_NONE) {
 				if (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
 												 XKB_STATE_MODS_EFFECTIVE) > 0)
 					anthy_input_resize(seat->input_context, -1);
@@ -82,7 +83,7 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 				return false;
 			break;
 		case XKB_KEY_Return:
-			if (anthy_input_get_state(seat->input_context) != 1) {
+			if (state != ANTHY_INPUT_ST_NONE) {
 				anthy_input_commit(seat->input_context);
 			} else
 				return false;
