@@ -35,6 +35,7 @@ struct wlanthy_seat {
 	struct xkb_context *xkb_context;
 	struct xkb_keymap *xkb_keymap;
 	struct xkb_state *xkb_state;
+	char *xkb_keymap_string;
 
 	bool active;
 	bool enabled;

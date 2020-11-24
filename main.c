@@ -203,13 +203,6 @@ static void handle_keymap(void *data,
 		uint32_t format, int32_t fd, uint32_t size) {
 	struct wlanthy_seat *seat = data;
 
-	static bool flag = true; // HACK: avoid keymap loop in sway
-	if (flag) {
-		zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
-									   size);
-		flag = false;
-	} // END HACK
-
 	if (format != WL_KEYBOARD_KEYMAP_FORMAT_XKB_V1) {
 		close(fd);
 		return;
@@ -221,6 +214,16 @@ static void handle_keymap(void *data,
 		close(fd);
 		return;
 	}
+
+	/*
+	 * This is currently needed to avoid the keymap loop bug in sway
+	 */
+	if (strcmp(seat->xkb_keymap_string, str) == 0)
+		return;
+
+	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
+								   size);
+	seat->xkb_keymap_string = strdup(str);
 
 	if (seat->xkb_keymap != NULL) {
 		xkb_keymap_unref(seat->xkb_keymap);
@@ -302,6 +305,8 @@ static void handle_done(void *data, struct zwp_input_method_v2 *input_method) {
 		seat->input_context = anthy_input_create_context(seat->input_config);
 
 		memset(seat->pressed, 0, sizeof(seat->pressed));
+
+		// wlhangul doesn't need this... why?
 		if (seat->xkb_keymap != NULL)
 			zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, 0, last,
 										WL_KEYBOARD_KEY_STATE_RELEASED);
@@ -332,6 +337,7 @@ static struct wlanthy_seat *create_seat(struct wlanthy_state *state,
 	struct wlanthy_seat *seat = calloc(1, sizeof(*seat));
 	seat->wl_seat = wl_seat;
 	seat->state = state;
+	seat->xkb_keymap_string = "";
 	wl_list_insert(&state->seats, &seat->link);
 	return seat;
 }
