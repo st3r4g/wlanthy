@@ -30,6 +30,13 @@ between phrases: for a given phrase you can press `Space` to change candidates
 and use `Alt+Tab` to resize it. Undo with `Backspace`. Commit with `Enter`
 (or by starting to type the next sentence).
 
+By default romaji input is mapped into Hiragana. Other mappings can be
+selected with the following keys:
+
+| `F5`     | `F6`     | `F7`       | `F8`       |
+|----------|----------|------------|------------|
+| Hiragana | Katakana | Half-Width | Full-Width |
+
 Press F12 to toggle anthy/passthrough mode. Passthrough mode is not meant
 for regular usage (it's slow), I think it would be better to enable/disable
 the input method from the compositor (but afaik Sway doesn't do this atm).

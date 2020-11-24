@@ -30,6 +30,7 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 		return false;
 	} else if (sym != XKB_KEY_BackSpace && sym != XKB_KEY_Tab && sym != XKB_KEY_Return
 			   && sym != XKB_KEY_ISO_Left_Tab && sym != XKB_KEY_Alt_L
+			   && (sym < XKB_KEY_F5 || sym > XKB_KEY_F8)
 			   && (sym < XKB_KEY_space || sym > XKB_KEY_asciitilde)) {
 //		char name[64];
 //		xkb_keysym_get_name(sym, name, 64);
@@ -87,6 +88,19 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 				return false;
 			break;
 		case XKB_KEY_Alt_L:
+			break;
+		case XKB_KEY_F5:
+			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_HIRAGANA);
+			break;
+		case XKB_KEY_F6:
+//			printf("map: %d\n", anthy_input_get_selected_map(seat->input_context));
+			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_KATAKANA);
+			break;
+		case XKB_KEY_F7:
+			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_ALPHABET);
+			break;
+		case XKB_KEY_F8:
+			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_WALPHABET);
 			break;
 		default:;
 			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
