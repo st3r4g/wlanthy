@@ -12,14 +12,58 @@
 
 #define WLANTHY_BUFSIZE 4000
 
+enum loglevel {
+	LV_DEBUG,
+	LV_INFO,
+	LV_ERROR,
+};
+
+static const char *loglevelstr[] = {
+	"dbg",
+	"inf",
+	"ERR",
+};
+
+static enum loglevel loglevel = LV_ERROR;
+
+static void log_line(enum loglevel loglevel_, const char *fmt, ...) {
+	if (loglevel_ < loglevel)
+		return;
+	va_list args;
+	va_start(args, fmt);
+	fprintf(stderr, "[wlanthy:%s] ", loglevelstr[loglevel_]);
+	vfprintf(stderr, fmt, args);
+	fprintf(stderr, "\n");
+	va_end(args);
+}
+
+static void log_head(enum loglevel loglevel_) {
+	if (loglevel_ < loglevel)
+		return;
+	fprintf(stderr, "[wlanthy:%s] ", loglevelstr[loglevel_]);
+}
+static void log_body(enum loglevel loglevel_, const char *fmt, ...) {
+	if (loglevel_ < loglevel)
+		return;
+	va_list args;
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
+}
+static void log_tail(enum loglevel loglevel_) {
+	if (loglevel_ < loglevel)
+		return;
+	fprintf(stderr, "\n");
+}
+
 /*
  * Returns false if the key needs to be passed through
  */
 static bool handle_key_anthy(struct wlanthy_seat *seat,
 							 xkb_keycode_t xkb_key) {
-	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
 	int state = anthy_input_get_state(seat->input_context);
-//	printf("state %d, map: %d\n", state, anthy_input_get_selected_map(seat->input_context));
+	int map = anthy_input_get_selected_map(seat->input_context);
+	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
 
 	if (sym == seat->state->toggle_key) {
 		seat->enabled = !seat->enabled;
@@ -97,15 +141,19 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 	/*
 	 * At this point the key has been handled by anthy
 	 */
+	char name[64];
+	xkb_keysym_get_name(sym, name, 64);
+	log_line(LV_DEBUG, "state: %d, map: %d", state, map);
+	log_line(LV_DEBUG, "pressed %s", name);
 /*	anthy_context_t ac;
 	if ((ac = anthy_input_get_anthy_context(seat->input_context)))
 		anthy_print_context(ac);*/
 
 	struct anthy_input_preedit *pe = anthy_input_get_preedit(seat->input_context);
-	assert(pe);
 
 	if (pe->commit) {
 		char *commit_str = iconv_code_conv(seat->conv_desc, pe->commit);
+		log_line(LV_DEBUG, "%s", commit_str);
 		zwp_input_method_v2_commit_string(seat->input_method, commit_str);
 		free(commit_str);
 	zwp_input_method_v2_commit(seat->input_method, seat->serial);
@@ -117,6 +165,8 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 	int totlen2 = 0;
 	int begin = 0;
 	int end = 0;
+	log_head(LV_DEBUG);
+	log_body(LV_DEBUG, "|");
 	for (struct anthy_input_segment* cur = pe->segment; cur != NULL &&
 		 cur->str != NULL; cur = cur->next) {
 		// TODO: clean up, convert only once
@@ -126,15 +176,15 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 		if (cur == pe->cur_segment) {
 			begin = totlen2;
 			end = totlen2+strlen(debug_str);
-//			printf("%s | ", debug_str);
+			log_body(LV_DEBUG, "*");
 		}
 		totlen2 += strlen(debug_str);
-//		printf ("%s ", debug_str);
+		log_body(LV_DEBUG, "%s|", debug_str);
 		free(debug_str);
 		if (WLANTHY_BUFSIZE-totlen-1 > 0)
 			strcat(buf, cur->str);
 	}
-//	printf("\n");
+	log_tail(LV_DEBUG);
 	char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
 	zwp_input_method_v2_set_preedit_string(seat->input_method,
 	preedit_str, begin, end);
@@ -368,6 +418,7 @@ static const struct wl_registry_listener registry_listener = {
 
 static const char usage[] = "usage: wlanthy [options...]\n"
 	"\n"
+	"    -d                 Show debug messages\n"
 	"    -i anthy|pass      Initial input mode (default: anthy)\n"
 	"    -k <key>           Key to toggle mode (default: F12)\n";
 
@@ -378,8 +429,11 @@ int main(int argc, char *argv[]) {
 	wl_list_init(&state.seats);
 
 	int opt;
-	while ((opt = getopt(argc, argv, "hi:k:")) != -1) {
+	while ((opt = getopt(argc, argv, "hdi:k:")) != -1) {
 		switch (opt) {
+		case 'd':
+			loglevel = LV_DEBUG;
+			break;
 		case 'i':
 			if (strcmp(optarg, "anthy") == 0) {
 				state.enabled_by_default = true;
