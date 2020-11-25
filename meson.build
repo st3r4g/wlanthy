@@ -26,7 +26,7 @@ wayland_client = dependency('wayland-client')
 wayland_protocols = dependency('wayland-protocols')
 xkbcommon = dependency('xkbcommon')
 
-wlanthy_files = files('main.c', 'utf8.c')
+wlanthy_files = files('main.c', 'utf8.c', 'log.c')
 
 subdir('protocol')
 

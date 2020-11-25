@@ -7,54 +7,11 @@
 #include <unistd.h>
 #include <wayland-client.h>
 #include "wlanthy.h"
+#include "log.h"
 #include "input-method-unstable-v2-client-protocol.h"
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
 
 #define WLANTHY_BUFSIZE 4000
-
-enum loglevel {
-	LV_DEBUG,
-	LV_INFO,
-	LV_ERROR,
-};
-
-static const char *loglevelstr[] = {
-	"dbg",
-	"inf",
-	"ERR",
-};
-
-static enum loglevel loglevel = LV_ERROR;
-
-static void log_line(enum loglevel loglevel_, const char *fmt, ...) {
-	if (loglevel_ < loglevel)
-		return;
-	va_list args;
-	va_start(args, fmt);
-	fprintf(stderr, "[wlanthy:%s] ", loglevelstr[loglevel_]);
-	vfprintf(stderr, fmt, args);
-	fprintf(stderr, "\n");
-	va_end(args);
-}
-
-static void log_head(enum loglevel loglevel_) {
-	if (loglevel_ < loglevel)
-		return;
-	fprintf(stderr, "[wlanthy:%s] ", loglevelstr[loglevel_]);
-}
-static void log_body(enum loglevel loglevel_, const char *fmt, ...) {
-	if (loglevel_ < loglevel)
-		return;
-	va_list args;
-	va_start(args, fmt);
-	vfprintf(stderr, fmt, args);
-	va_end(args);
-}
-static void log_tail(enum loglevel loglevel_) {
-	if (loglevel_ < loglevel)
-		return;
-	fprintf(stderr, "\n");
-}
 
 /*
  * Returns false if the key needs to be passed through
@@ -436,7 +393,7 @@ int main(int argc, char *argv[]) {
 	while ((opt = getopt(argc, argv, "hdi:k:")) != -1) {
 		switch (opt) {
 		case 'd':
-			loglevel = LV_DEBUG;
+			log_set_loglevel(LV_DEBUG);
 			break;
 		case 'i':
 			if (strcmp(optarg, "anthy") == 0) {
