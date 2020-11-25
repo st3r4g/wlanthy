@@ -16,9 +16,11 @@
  * Returns false if the key needs to be passed through
  */
 static bool handle_key_anthy(struct wlanthy_seat *seat,
-		xkb_keycode_t xkb_key) {
+							 xkb_keycode_t xkb_key) {
 	xkb_keysym_t sym = xkb_state_key_get_one_sym(seat->xkb_state, xkb_key);
 	int state = anthy_input_get_state(seat->input_context);
+//	printf("state %d, map: %d\n", state, anthy_input_get_selected_map(seat->input_context));
+
 	if (sym == seat->state->toggle_key) {
 		seat->enabled = !seat->enabled;
 		if (!seat->enabled) {
@@ -29,29 +31,15 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 		return true;
 	} else if (!seat->enabled) {
 		return false;
-	} else if (sym != XKB_KEY_BackSpace && sym != XKB_KEY_Tab && sym != XKB_KEY_Return
-			   && sym != XKB_KEY_ISO_Left_Tab && sym != XKB_KEY_Alt_L
-			   && (sym < XKB_KEY_F5 || sym > XKB_KEY_F8)
-			   && (sym < XKB_KEY_space || sym > XKB_KEY_asciitilde)) {
-//		char name[64];
-//		xkb_keysym_get_name(sym, name, 64);
-//		printf("%s detected\n", name);
-		return false;
-	} else if (xkb_state_mod_names_are_active(seat->xkb_state,
-XKB_STATE_MODS_EFFECTIVE, XKB_STATE_MATCH_ANY, XKB_MOD_NAME_CTRL,
-XKB_MOD_NAME_LOGO, XKB_MOD_NAME_CAPS,
-// TODO: investigate EFFECTIVE vs others
-// TODO: investigate XKB_LED_NAME_CAPS, XKB_LED_NAME_NUM, XKB_LED_NAME_SCROLL
-NULL) > 0) {
-	/*
-	 * Passthrough key if any modifier is active
-	 */
-		return false;
 	} else if (state == ANTHY_INPUT_ST_NONE && (xkb_state_mod_name_is_active(seat->xkb_state, XKB_MOD_NAME_ALT,
 XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 		return false;
 	} else {
 		switch (sym) {
+		case XKB_KEY_exclam ... XKB_KEY_asciitilde:;
+			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
+			anthy_input_key(seat->input_context, ch);
+			break;
 		case XKB_KEY_space:
 			anthy_input_space(seat->input_context);
 			break;
@@ -89,12 +77,11 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 				return false;
 			break;
 		case XKB_KEY_Alt_L:
-			break;
+			return true;
 		case XKB_KEY_F5:
 			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_HIRAGANA);
 			break;
 		case XKB_KEY_F6:
-//			printf("map: %d\n", anthy_input_get_selected_map(seat->input_context));
 			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_KATAKANA);
 			break;
 		case XKB_KEY_F7:
@@ -103,16 +90,13 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 		case XKB_KEY_F8:
 			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_WALPHABET);
 			break;
-		default:;
-			uint32_t ch = xkb_state_key_get_utf32(seat->xkb_state, xkb_key);
-			anthy_input_key(seat->input_context, ch);
-			break;
+		default:
+			return false;
 		}
 	}
 	/*
 	 * At this point the key has been handled by anthy
 	 */
-//	printf("state: %d\n", anthy_input_get_state(seat->input_context));
 /*	anthy_context_t ac;
 	if ((ac = anthy_input_get_anthy_context(seat->input_context)))
 		anthy_print_context(ac);*/
@@ -175,9 +159,22 @@ static void handle_key(void *data,
 	}
 
 	bool handled = false;
-	if (state == WL_KEYBOARD_KEY_STATE_PRESSED)
-		handled = handle_key_anthy(seat, xkb_key);
+	if (state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		if (xkb_state_mod_names_are_active(seat->xkb_state,
+XKB_STATE_MODS_EFFECTIVE, XKB_STATE_MATCH_ANY, XKB_MOD_NAME_CTRL,
+XKB_MOD_NAME_LOGO, XKB_MOD_NAME_CAPS,
+// TODO: investigate EFFECTIVE vs others
+// TODO: investigate XKB_LED_NAME_CAPS, XKB_LED_NAME_NUM, XKB_LED_NAME_SCROLL
+NULL) > 0) {
+		/*
+		 * Passthrough key if any modifier is active
+		 */
+			handled = false;
+		} else
+			handled = handle_key_anthy(seat, xkb_key);
+	}
 
+	// we are sending too many release here... bring back wlhangul stuff
 	if (!handled) {
 		zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, time, key, state);
 	}
