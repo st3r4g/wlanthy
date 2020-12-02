@@ -8,7 +8,7 @@
 #include <wayland-client.h>
 #include "wlanthy.h"
 #include "input-method-unstable-v2-client-protocol.h"
-#include "virtual-keyboard-unstable-v1-client-protocol.h"
+//#include "virtual-keyboard-unstable-v1-client-protocol.h"
 
 #define WLANTHY_BUFSIZE 4000
 
@@ -226,7 +226,7 @@ NULL) > 0) {
 
 	// we are sending too many release here... bring back wlhangul stuff
 	if (!handled) {
-		zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, time, key, state);
+//		zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, time, key, state);
 	}
 }
 
@@ -242,8 +242,8 @@ static void handle_modifiers(void *data,
 
 	xkb_state_update_mask(seat->xkb_state, mods_depressed,
 		mods_latched, mods_locked, 0, 0, group);
-	zwp_virtual_keyboard_v1_modifiers(seat->virtual_keyboard,
-		mods_depressed, mods_latched, mods_locked, group);
+//	zwp_virtual_keyboard_v1_modifiers(seat->virtual_keyboard,
+//		mods_depressed, mods_latched, mods_locked, group);
 }
 
 static void handle_keymap(void *data,
@@ -266,11 +266,11 @@ static void handle_keymap(void *data,
 	/*
 	 * This is currently needed to avoid the keymap loop bug in sway
 	 */
-	if (strcmp(seat->xkb_keymap_string, str) == 0)
-		return;
+//	if (strcmp(seat->xkb_keymap_string, str) == 0)
+//		return;
 
-	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
-								   size);
+//	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
+//								   size);
 	seat->xkb_keymap_string = strdup(str);
 
 	if (seat->xkb_keymap != NULL) {
@@ -294,6 +294,57 @@ static void handle_keymap(void *data,
 		fprintf(stderr, "Failed to create XKB state\n");
 		return;
 	}
+	
+	struct wl_array ranges, singles;
+	wl_array_init(&ranges);
+	wl_array_init(&singles);
+	uint32_t *r = wl_array_add(&ranges, 4*sizeof(uint32_t));
+	*r = xkb_keysym_to_utf32(XKB_KEY_space);
+	*(r+1) = xkb_keysym_to_utf32(XKB_KEY_asciitilde);
+	*(r+2) = XKB_KEY_F5;
+	*(r+3) = XKB_KEY_F8;
+	zwp_input_method_keyboard_grab_v2_configure_grab(keyboard_grab, 0, &ranges, &singles);
+	wl_array_release(&ranges);
+	wl_array_release(&singles);
+
+	wl_array_init(&ranges);
+	wl_array_init(&singles);
+	r = wl_array_add(&ranges, 14*sizeof(uint32_t));
+	*r = xkb_keysym_to_utf32(XKB_KEY_space);
+	*(r+1) = xkb_keysym_to_utf32(XKB_KEY_asciitilde);
+	*(r+2) = XKB_KEY_Return;
+	*(r+3) = XKB_KEY_Return;
+	*(r+4) = XKB_KEY_BackSpace;
+	*(r+5) = XKB_KEY_BackSpace;
+	*(r+6) = XKB_KEY_Tab;
+	*(r+7) = XKB_KEY_Tab;
+	*(r+8) = XKB_KEY_ISO_Left_Tab;
+	*(r+9) = XKB_KEY_ISO_Left_Tab;
+	*(r+10) = XKB_KEY_Alt_L;
+	*(r+11) = XKB_KEY_Alt_L;
+	*(r+12) = XKB_KEY_F5;
+	*(r+13) = XKB_KEY_F8;
+	uint32_t *s = wl_array_add(&singles, sizeof(uint32_t));
+	*s = 222; //TODO
+	zwp_input_method_keyboard_grab_v2_configure_grab(keyboard_grab, 1, &ranges, &singles);
+	wl_array_release(&ranges);
+	wl_array_release(&singles);
+
+	wl_array_init(&singles);
+	s = wl_array_add(&singles, 2*sizeof(uint32_t));
+	*s = XKB_KEY_exclam;
+	*(s+1) = XKB_KEY_asciitilde;
+	zwp_input_method_keyboard_grab_v2_configure_transitions(keyboard_grab, 0, 1, &singles);
+	wl_array_release(&singles);
+
+	wl_array_init(&singles);
+	s = wl_array_add(&singles, 4*sizeof(uint32_t));
+	*s = XKB_KEY_Return;
+	*(s+1) = XKB_KEY_Return;
+	*(s+2) = XKB_KEY_Escape;
+	*(s+3) = XKB_KEY_Escape;
+	zwp_input_method_keyboard_grab_v2_configure_transitions(keyboard_grab, 1, 0, &singles);
+	wl_array_release(&singles);
 }
 
 static void handle_repeat_info(void *data,
@@ -355,9 +406,9 @@ static void handle_done(void *data, struct zwp_input_method_v2 *input_method) {
 		memset(seat->pressed, 0, sizeof(seat->pressed));
 
 		// wlhangul doesn't need this... why?
-		if (seat->xkb_keymap != NULL)
-			zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, 0, last,
-										WL_KEYBOARD_KEY_STATE_RELEASED);
+//		if (seat->xkb_keymap != NULL)
+//			zwp_virtual_keyboard_v1_key(seat->virtual_keyboard, 0, last,
+//										WL_KEYBOARD_KEY_STATE_RELEASED);
 		seat->keyboard_grab = NULL;
 		seat->active = false;
 	}
@@ -399,11 +450,11 @@ static void registry_handle_global(void *data, struct wl_registry *registry,
 		create_seat(state, seat);
 	} else if (strcmp(interface, zwp_input_method_manager_v2_interface.name) == 0) {
 		state->input_method_manager = wl_registry_bind(registry, name,
-			&zwp_input_method_manager_v2_interface, 1);
-	} else if (strcmp(interface, zwp_virtual_keyboard_manager_v1_interface.name) == 0) {
+			&zwp_input_method_manager_v2_interface, 2);
+	} /*else if (strcmp(interface, zwp_virtual_keyboard_manager_v1_interface.name) == 0) {
 		state->virtual_keyboard_manager = wl_registry_bind(registry, name,
 			&zwp_virtual_keyboard_manager_v1_interface, 1);
-	}
+	}*/
 }
 
 static void registry_handle_global_remove(void *data,
@@ -484,9 +535,9 @@ int main(int argc, char *argv[]) {
 			state.input_method_manager, seat->wl_seat);
 		zwp_input_method_v2_add_listener(seat->input_method,
 			&input_method_listener, seat);
-		seat->virtual_keyboard =
+/*		seat->virtual_keyboard =
 			zwp_virtual_keyboard_manager_v1_create_virtual_keyboard(
-			state.virtual_keyboard_manager, seat->wl_seat);
+			state.virtual_keyboard_manager, seat->wl_seat);*/
 		seat->xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
 		seat->enabled = state.enabled_by_default;
 	}

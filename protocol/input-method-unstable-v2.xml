@@ -50,7 +50,7 @@
     interface version number is reset.
   </description>
 
-  <interface name="zwp_input_method_v2" version="1">
+  <interface name="zwp_input_method_v2" version="2">
     <description summary="input method">
       An input method object allows for clients to compose text.
 
@@ -96,7 +96,7 @@
 
     <event name="deactivate">
       <description summary="deactivate event">
-        Notification that no focused text input currently needs an active
+        Notification that no focused text input currently needs an active 
         input method on this seat.
 
         This event marks the zwp_input_method_v2 object as inactive. The
@@ -392,7 +392,7 @@
     <request name="destroy" type="destructor"/>
   </interface>
 
-  <interface name="zwp_input_method_keyboard_grab_v2" version="1">
+  <interface name="zwp_input_method_keyboard_grab_v2" version="2">
     <!-- Closely follows wl_keyboard version 6 -->
     <description summary="keyboard grab">
       The zwp_input_method_keyboard_grab_v2 interface represents an exclusive
@@ -459,9 +459,21 @@
       <arg name="delay" type="int"
 	   summary="delay in milliseconds since key down until repeating starts"/>
     </event>
+
+    <request name="configure_grab" since="2">
+      <arg name="state" type="uint"/>
+      <arg name="ranges" type="array"/>
+      <arg name="singles" type="array"/>
+    </request>
+
+    <request name="configure_transitions" since="2">
+      <arg name="state_i" type="uint"/>
+      <arg name="state_f" type="uint"/>
+      <arg name="singles" type="array"/>
+    </request>
   </interface>
 
-  <interface name="zwp_input_method_manager_v2" version="1">
+  <interface name="zwp_input_method_manager_v2" version="2">
     <description summary="input method manager">
       The input method manager allows the client to become the input method on
       a chosen seat.
