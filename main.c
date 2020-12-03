@@ -266,8 +266,10 @@ static void handle_keymap(void *data,
 	/*
 	 * This is currently needed to avoid the keymap loop bug in sway
 	 */
-	if (strcmp(seat->xkb_keymap_string, str) == 0)
-		return;
+	static bool first_call = true;
+	if (!first_call)
+    		return;
+	first_call == false;
 
 	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
 								   size);
