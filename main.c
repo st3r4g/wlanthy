@@ -71,6 +71,8 @@ static bool handle_key_anthy(struct wlanthy_seat *seat,
 			// reset state
 			anthy_input_free_context(seat->input_context);
 			seat->input_context = anthy_input_create_context(seat->input_config);
+			zwp_input_method_v2_set_preedit_string(seat->input_method, "", 0, 0);
+			zwp_input_method_v2_commit(seat->input_method, seat->serial);
 		}
 		return true;
 	} else if (!seat->enabled) {
