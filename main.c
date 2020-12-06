@@ -228,7 +228,7 @@ static void handle_keymap(void *data,
 	static bool first_call = true;
 	if (!first_call)
     		return;
-	first_call == false;
+	first_call = false;
 
 	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
 								   size);
