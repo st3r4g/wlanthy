@@ -59,7 +59,7 @@ iconv_code_conv(iconv_t cd, const char *instr)
     out = outbuf;
     outs = outbufsiz;
 
-    ret = iconv(cd, &in, &ins, &out, &outs);
+    ret = iconv(cd, (char **)&in, &ins, &out, &outs);
     nconv = outbufsiz - outs;
     if (ret == (size_t)-1) {
       switch (errno) {
