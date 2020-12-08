@@ -11,7 +11,7 @@
 #include "input-method-unstable-v2-client-protocol.h"
 #include "virtual-keyboard-unstable-v1-client-protocol.h"
 
-#define WLANTHY_BUFSIZE 4000
+#define PREEDIT_BUFSIZE 4000
 
 /*
  * Returns false if the key needs to be passed through
@@ -119,36 +119,31 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 	return true;
 	}
 
-	char buf[WLANTHY_BUFSIZE]; buf[0] = '\0';
+	char preedit_str[PREEDIT_BUFSIZE]; preedit_str[0] = '\0';
 	int totlen = 0;
-	int totlen2 = 0;
 	int begin = 0;
 	int end = 0;
 	log_head(LV_DEBUG);
 	log_body(LV_DEBUG, "|");
 	for (struct anthy_input_segment* cur = pe->segment; cur != NULL &&
 		 cur->str != NULL; cur = cur->next) {
-		// TODO: clean up, convert only once
-		assert(cur->str);
-		totlen += strlen(cur->str);
-		char *debug_str = iconv_code_conv(seat->conv_desc, cur->str);
+		char *utf8_str = iconv_code_conv(seat->conv_desc, cur->str);
+		size_t len = strlen(utf8_str);
 		if (cur == pe->cur_segment) {
-			begin = totlen2;
-			end = totlen2+strlen(debug_str);
+			begin = totlen;
+			end = totlen+len;
 			log_body(LV_DEBUG, "*");
 		}
-		totlen2 += strlen(debug_str);
-		log_body(LV_DEBUG, "%s|", debug_str);
-		free(debug_str);
-		if (WLANTHY_BUFSIZE-totlen-1 > 0)
-			strcat(buf, cur->str);
+		totlen += len;
+		log_body(LV_DEBUG, "%s|", utf8_str);
+		if (PREEDIT_BUFSIZE-totlen-1 > 0)
+			strcat(preedit_str, utf8_str);
+		free(utf8_str);
 	}
 	log_tail(LV_DEBUG);
-	char *preedit_str = iconv_code_conv(seat->conv_desc, buf);
 	zwp_input_method_v2_set_preedit_string(seat->input_method,
 	preedit_str, begin, end);
 	zwp_input_method_v2_commit(seat->input_method, seat->serial);
-	free(preedit_str);
 
 	anthy_input_free_preedit(pe);
 	return true;
