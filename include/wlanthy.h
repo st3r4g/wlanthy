@@ -1,5 +1,5 @@
-#ifndef WLHANGUL_H
-#define WLHANGUL_H
+#ifndef WLANTHY_H
+#define WLANTHY_H
 
 #include <anthy/anthy.h>
 #include <anthy/input.h>
