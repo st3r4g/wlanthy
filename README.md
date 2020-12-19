@@ -17,10 +17,12 @@ support][sway-keyboard-grab].
 By default it starts in anthy mode, so you should be able to start typing
 in japanese right away after giving focus to a supported application.
 
-Supported applications are those that implement the `text-input-v3` protocol,
-like gtk+3 applications (e.g. Firefox). Unfortunately, at the moment qt5
-implements `text-input-v2` which is probably very similar but not implemented
-by Sway (wlroots).
+Supported applications are those that implement the `text-input-v3` protocol:
+* `gtk+3` applications (e.g. Firefox, GNOME apps)
+* [foot] terminal emulator, since 1.6.0
+
+Unfortunately, at the moment `qt5` implements `text-input-v2` which is not
+implemented by `wlroots`.
 
 ## Usage
 
@@ -47,3 +49,4 @@ MIT
 
 [wlhangul]: https://github.com/emersion/wlhangul
 [sway-keyboard-grab]: https://github.com/swaywm/sway/pull/4932
+[foot]: https://codeberg.org/dnkl/foot
