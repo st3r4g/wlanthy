@@ -1,14 +1,13 @@
 # wlanthy
 
-Experimental, simple Wayland-native Japanese input method. Born as a
-modification of [wlhangul].
+Experimental, simple Wayland-native Japanese input method, using protocols
+implemented by `wlroots`. Born as a modification of [wlhangul].
+
+On Sway, this requires building from master (future version 1.6).
 
 ## Building
 
 Depends on `anthy`, `wayland` and `libxkbcommon`.
-
-On Sway, this requires a [patch to add keyboard grab
-support][sway-keyboard-grab].
 
     meson build/
     ninja -C build/
