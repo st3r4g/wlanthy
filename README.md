@@ -38,14 +38,14 @@ selected with the following keys:
 |----------|----------|------------|------------|
 | Hiragana | Katakana | Half-Width | Full-Width |
 
-Press F12 to toggle anthy/passthrough mode. Passthrough mode is not meant
-for regular usage (it's slow), I think it would be better to enable/disable
-the input method from the compositor (but afaik Sway doesn't do this atm).
+Press F12 to toggle anthy/passthrough mode. Passthrough mode is slow because
+the key has to travel back-and-forth between wlanthy and the compositor, so it
+is recommended to instead bind a keyboard shortcut to a script that toggles the
+wlanthy service.
 
 ## License
 
 MIT
 
 [wlhangul]: https://github.com/emersion/wlhangul
-[sway-keyboard-grab]: https://github.com/swaywm/sway/pull/4932
 [foot]: https://codeberg.org/dnkl/foot
