@@ -3,7 +3,7 @@
 Experimental, simple Wayland-native Japanese input method, using protocols
 implemented by `wlroots`. Born as a modification of [wlhangul].
 
-On Sway, this requires building from master (future version 1.6).
+On Sway, this requires version >= **1.6**.
 
 ## Building
 
