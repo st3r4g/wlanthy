@@ -1,0 +1,1 @@
+option('input', type : 'combo', choices : ['anthy', 'custom'], value : 'anthy')

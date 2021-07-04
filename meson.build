@@ -20,13 +20,21 @@ add_project_arguments(cc.get_supported_arguments([
 
 wlanthy_inc = include_directories('include')
 
-anthy = dependency('anthy')
-anthyinput = cc.find_library('anthyinput')
-wayland_client = dependency('wayland-client')
-wayland_protocols = dependency('wayland-protocols')
-xkbcommon = dependency('xkbcommon')
-
 wlanthy_files = files('main.c', 'utf8.c', 'log.c')
+
+deps = []
+anthy = dependency('anthy')
+deps += anthy
+if get_option('input') == 'anthy'
+	deps += cc.find_library('anthyinput')
+else
+	add_project_arguments('-DHAVE_UTF8=1', language: 'c')
+	wlanthy_files += files('input.c')
+endif
+deps += dependency('wayland-client')
+wayland_protocols = dependency('wayland-protocols')
+deps += wayland_protocols
+deps += dependency('xkbcommon')
 
 subdir('protocol')
 
@@ -34,6 +42,6 @@ executable(
 	meson.project_name(),
 	wlanthy_files,
 	include_directories: wlanthy_inc,
-	dependencies: [anthy, anthyinput, wayland_client, xkbcommon],
+	dependencies: deps,
 	install: true,
 )

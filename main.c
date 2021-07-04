@@ -111,10 +111,16 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 	struct anthy_input_preedit *pe = anthy_input_get_preedit(seat->input_context);
 
 	if (pe->commit) {
+#ifndef HAVE_UTF8
 		char *commit_str = iconv_code_conv(seat->conv_desc, pe->commit);
+#else
+		char *commit_str = pe->commit;
+#endif
 		log_line(LV_DEBUG, "%s", commit_str);
 		zwp_input_method_v2_commit_string(seat->input_method, commit_str);
+#ifndef HAVE_UTF8
 		free(commit_str);
+#endif
 	zwp_input_method_v2_commit(seat->input_method, seat->serial);
 	return true;
 	}
@@ -127,7 +133,11 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 	log_body(LV_DEBUG, "|");
 	for (struct anthy_input_segment* cur = pe->segment; cur != NULL &&
 		 cur->str != NULL; cur = cur->next) {
+#ifndef HAVE_UTF8
 		char *utf8_str = iconv_code_conv(seat->conv_desc, cur->str);
+#else
+		char *utf8_str = cur->str;
+#endif
 		size_t len = strlen(utf8_str);
 		if (cur == pe->cur_segment) {
 			begin = totlen;
@@ -138,7 +148,9 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 		log_body(LV_DEBUG, "%s|", utf8_str);
 		if (PREEDIT_BUFSIZE-totlen-1 > 0)
 			strcat(preedit_str, utf8_str);
+#ifndef HAVE_UTF8
 		free(utf8_str);
+#endif
 	}
 	log_tail(LV_DEBUG);
 	zwp_input_method_v2_set_preedit_string(seat->input_method,
