@@ -94,25 +94,25 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_WALPHABET);
 			break;
 		case XKB_KEY_Up:
-			if (state == ANTHY_INPUT_ST_CONV)
+			if (state != ANTHY_INPUT_ST_NONE)
 				anthy_input_prev_candidate(seat->input_context);
 			else
 				return false;
 			break;
 		case XKB_KEY_Down:
-			if (state == ANTHY_INPUT_ST_CONV)
+			if (state != ANTHY_INPUT_ST_NONE)
 				anthy_input_next_candidate(seat->input_context);
 			else
 				return false;
 			break;
 		case XKB_KEY_Left:
-			if (state == ANTHY_INPUT_ST_CONV)
+			if (state != ANTHY_INPUT_ST_NONE)
 				anthy_input_move(seat->input_context, -1);
 			else
 				return false;
 			break;
 		case XKB_KEY_Right:
-			if (state == ANTHY_INPUT_ST_CONV)
+			if (state != ANTHY_INPUT_ST_NONE)
 				anthy_input_move(seat->input_context, +1);
 			else
 				return false;
@@ -155,8 +155,11 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 	int end = 0;
 	log_head(LV_DEBUG);
 	log_body(LV_DEBUG, "|");
-	for (struct anthy_input_segment* cur = pe->segment; cur != NULL &&
-		 cur->str != NULL; cur = cur->next) {
+	for (struct anthy_input_segment* cur = pe->segment; cur != NULL; cur = cur->next) {
+		if (cur->str == NULL) { // the cursor, maybe should also check for ANTHY_INPUT_SF_CURSOR flag
+			begin = end = totlen;
+			continue;
+		}
 #ifndef HAVE_UTF8
 		char *utf8_str = iconv_code_conv(seat->conv_desc, cur->str);
 #else
