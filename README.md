@@ -25,11 +25,11 @@ implemented by `wlroots`.
 
 ## Usage
 
-Romaji input is immediately turned into kana. Press `Space` to subdivide
-the sentence into segments called phrases (文節). Use `Tab` to navigate
-between phrases: for a given phrase you can press `Space` to change candidates
-and use `Alt+Tab` to resize it. Undo with `Backspace`. Commit with `Enter`
-(or by starting to type the next sentence).
+Romaji input is immediately turned into kana. Press `Space` to subdivide the
+sentence into segments called phrases (文節). Use `Tab` or `Left/Right`
+to navigate between phrases: for a given phrase you can press `Space` or
+`Up/Down` to change candidates and use `Alt+Tab` to resize it. Undo with
+`Backspace`. Commit with `Enter` (or by starting to type the next sentence).
 
 By default romaji input is mapped into Hiragana. Other mappings can be
 selected with the following keys:

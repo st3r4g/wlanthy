@@ -93,6 +93,30 @@ XKB_STATE_MODS_EFFECTIVE) > 0 || sym == XKB_KEY_Alt_L)) {
 		case XKB_KEY_F8:
 			anthy_input_map_select(seat->input_context, ANTHY_INPUT_MAP_WALPHABET);
 			break;
+		case XKB_KEY_Up:
+			if (state == ANTHY_INPUT_ST_CONV)
+				anthy_input_prev_candidate(seat->input_context);
+			else
+				return false;
+			break;
+		case XKB_KEY_Down:
+			if (state == ANTHY_INPUT_ST_CONV)
+				anthy_input_next_candidate(seat->input_context);
+			else
+				return false;
+			break;
+		case XKB_KEY_Left:
+			if (state == ANTHY_INPUT_ST_CONV)
+				anthy_input_move(seat->input_context, -1);
+			else
+				return false;
+			break;
+		case XKB_KEY_Right:
+			if (state == ANTHY_INPUT_ST_CONV)
+				anthy_input_move(seat->input_context, +1);
+			else
+				return false;
+			break;
 		default:
 			return false;
 		}
