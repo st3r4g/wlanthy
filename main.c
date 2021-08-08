@@ -259,13 +259,15 @@ static void handle_keymap(void *data,
 	/*
 	 * This is currently needed to avoid the keymap loop bug in sway
 	 */
-	static bool first_call = true;
-	if (!first_call)
-    		return;
-	first_call = false;
+	if (!(seat->xkb_keymap_string == NULL || strcmp(seat->xkb_keymap_string, str) != 0)) {
+		munmap(str, size);
+		close(fd);
+		return;
+	}
 
 	zwp_virtual_keyboard_v1_keymap(seat->virtual_keyboard, format, fd,
 								   size);
+	free(seat->xkb_keymap_string);
 	seat->xkb_keymap_string = strdup(str);
 
 	if (seat->xkb_keymap != NULL) {
@@ -380,7 +382,6 @@ static struct wlanthy_seat *create_seat(struct wlanthy_state *state,
 	struct wlanthy_seat *seat = calloc(1, sizeof(*seat));
 	seat->wl_seat = wl_seat;
 	seat->state = state;
-	seat->xkb_keymap_string = "";
 	wl_list_insert(&state->seats, &seat->link);
 	return seat;
 }
