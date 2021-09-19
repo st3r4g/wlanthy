@@ -26,7 +26,7 @@ deps = []
 anthy = dependency('anthy')
 deps += anthy
 if get_option('input') == 'anthy'
-	deps += cc.find_library('anthyinput')
+	deps += cc.find_library('anthyinput', dirs: anthy.get_variable(pkgconfig: 'libdir'))
 else
 	add_project_arguments('-DHAVE_UTF8=1', language: 'c')
 	wlanthy_files += files('input.c')
